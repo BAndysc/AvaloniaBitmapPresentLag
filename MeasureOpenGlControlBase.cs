@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Logging;
 using Avalonia.Media;
@@ -18,6 +20,9 @@ namespace Avalonia.OpenGL.Controls
         private bool _glFailed;
         private bool _initialized;
         protected GlVersion GlVersion { get; private set; }
+        private Stopwatch sw = new();
+        private double[] presentTimeArray = new double[30];
+        private int presentTimeIndex = 0;
         public sealed override void Render(DrawingContext context)
         {
             if(!EnsureInitialized())
@@ -32,7 +37,11 @@ namespace Avalonia.OpenGL.Controls
                     return;
                 
                 OnOpenGlRender(_context.GlInterface, _fb);
+                sw.Restart();
                 _attachment.Present();
+                sw.Stop();
+                presentTimeArray[presentTimeIndex++ % presentTimeArray.Length] = sw.Elapsed.TotalMilliseconds;
+                Console.WriteLine($"Avg: {presentTimeArray.Average()} ms, Width: {_bitmap.Size.Width}, Height: {_bitmap.Size.Height}");
             }
 
             context.DrawImage(_bitmap, new Rect(_bitmap.Size), Bounds);
